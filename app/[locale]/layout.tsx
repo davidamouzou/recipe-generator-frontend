@@ -4,14 +4,14 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { Analytics } from "@vercel/analytics/react";
 import React from "react";
 import { Metadata } from "next";
-import { Nunito } from "next/font/google";
+import { Outfit } from "next/font/google";
 
-const nunito = Nunito({
+const outfit = Outfit({
   subsets: ["latin"],
-  weight: ["200", "300", "400", "600", "700", "800"],
+  weight: ["200", "300", "400", "500", "600", "700", "800"],
   display: "swap",
   fallback: ["system-ui", "sans-serif"],
-  variable: "--font-nunito",
+  variable: "--font-outfit",
 });
 
 export const metadata: Metadata = {
@@ -48,7 +48,7 @@ export default async function RootLayout({
     <html lang={locale} suppressHydrationWarning>
       <head />
       <body
-        className={`${nunito.className}`}
+        className={`${outfit.className}`}
       >
         <NextIntlClientProvider locale={locale} messages={messages}>
           <ThemeProvider
