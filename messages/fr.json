@@ -1,0 +1,21 @@
+{
+    "Header": {
+        "toggleTheme": "Changer de thème"
+    },
+    "Hero": {
+        "fresh": "Nourriture",
+        "food": "Fraîche",
+        "with": "Avec",
+        "great": "Grand",
+        "taste": "Goût",
+        "description": "Dans l'ensemble, \"Créer de délicieux plats\" est une ressource essentielle pour quiconque souhaite lancer une entreprise alimentaire ou faire passer ses compétences culinaires au niveau supérieur."
+    },
+    "RecipeList": {
+        "popularRecipes": "Recettes Populaires",
+        "loading": "Chargement...",
+        "loadMore": "Charger plus de recettes"
+    },
+    "LanguageSelector": {
+        "label": "Langue"
+    }
+}

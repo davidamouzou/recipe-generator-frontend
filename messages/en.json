@@ -1,0 +1,21 @@
+{
+    "Header": {
+        "toggleTheme": "Toggle theme"
+    },
+    "Hero": {
+        "fresh": "Fresh",
+        "food": "Food",
+        "with": "With",
+        "great": "Great",
+        "taste": "Taste",
+        "description": "Overall, \"Creating Delicious Dishes\" is an essential resource for anyone looking to start a food business or take their culinary skills to the next level."
+    },
+    "RecipeList": {
+        "popularRecipes": "Popular Recipes",
+        "loading": "Loading...",
+        "loadMore": "Load More Recipes"
+    },
+    "LanguageSelector": {
+        "label": "Language"
+    }
+}

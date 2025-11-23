@@ -5,10 +5,13 @@ import Image from "next/image";
 import { Button } from "../ui/button";
 import { useTheme } from "next-themes";
 import { Sun, Moon } from "lucide-react";
+import LanguageSelector from "./language-selector";
+import { useTranslations } from "next-intl";
 
 
 const Header = () => {
   const { setTheme } = useTheme()
+  const t = useTranslations('Header');
 
   return (
     <header className="flex justify-between items-center py-2">
@@ -19,13 +22,16 @@ const Header = () => {
         </div>
         <div className="text-4xl font-black pb-1">ook</div>
       </h1>
-      <Button
-        onClick={() => setTheme(theme => theme === "dark" ? "light" : "dark")}
-        variant="outline" size="icon">
-        <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-        <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-        <span className="sr-only">Toggle theme</span>
-      </Button>
+      <div className="flex items-center gap-2">
+        <LanguageSelector />
+        <Button
+          onClick={() => setTheme(theme => theme === "dark" ? "light" : "dark")}
+          variant="outline" size="icon">
+          <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+          <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+          <span className="sr-only">{t('toggleTheme')}</span>
+        </Button>
+      </div>
     </header>
   );
 };
