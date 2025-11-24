@@ -1,4 +1,4 @@
-import { compressImageToBase64, extractErrorMessageSafe } from "@/app/utils/upload_file"
+import { compressImageToBase64, extractErrorMessageSafe } from "@/api/functions/upload_file"
 import { apiConfig } from "@/api/config";
 import { Recipe } from "@/api/entities/recipe";
 
@@ -93,7 +93,7 @@ export class RecipeProvider {
                 headers: apiConfig.request_headers,
                 body: JSON.stringify({ description: image }),
             })
-            
+
             if (response.ok) {
                 return (await response.json())['url'] as string;;
             } else {

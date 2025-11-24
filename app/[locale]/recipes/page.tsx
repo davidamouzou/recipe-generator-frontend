@@ -1,11 +1,12 @@
-import { RecipeList } from "@/components/widgets/recipe-list";
+import { RecipeList } from "@/app/components/widgets/recipe-list";
 import { RecipeProvider } from "@/app/context/RecipeContext";
-import RecipeCreator from "@/components/widgets/recipe-composer";
-import Header from "@/components/widgets/header";
+import RecipeCreator from "@/app/components/widgets/recipe-composer";
+import Header from "@/app/components/widgets/header";
 
 export default function RecipesPage() {
     return (
         <RecipeProvider>
+            <RecipeCreator />
             <main className="min-h-screen bg-background">
                 <div className="lg:mx-16 m-4 md:m-8">
                     <Header />
@@ -21,7 +22,6 @@ export default function RecipesPage() {
 
                         <RecipeList />
 
-                        <RecipeCreator />
                     </div>
                 </div>
             </main>

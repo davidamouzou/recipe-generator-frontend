@@ -1,8 +1,8 @@
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import Header from "@/components/widgets/header";
-import { Mail, MapPin, Phone } from "lucide-react";
+import { Button } from "@/app/components/ui/button";
+import { Input } from "@/app/components/ui/input";
+import { Textarea } from "@/app/components/ui/textarea";
+import Header from "@/app/components/widgets/header";
+import { Globe, Mail } from "lucide-react";
 
 export default function ContactPage() {
     return (
@@ -26,25 +26,18 @@ export default function ContactPage() {
                                 </div>
                                 <div>
                                     <h3 className="font-semibold">Email Us</h3>
-                                    <p className="text-muted-foreground">hello@flavoriz.com</p>
+                                    <p className="text-muted-foreground">davidamzou@gmail.com</p>
                                 </div>
                             </div>
                             <div className="flex items-center gap-4">
                                 <div className="bg-primary/10 p-3 rounded-full text-primary">
-                                    <Phone className="w-6 h-6" />
+                                    <Globe className="w-6 h-6" />
                                 </div>
                                 <div>
-                                    <h3 className="font-semibold">Call Us</h3>
-                                    <p className="text-muted-foreground">+1 (555) 123-4567</p>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-4">
-                                <div className="bg-primary/10 p-3 rounded-full text-primary">
-                                    <MapPin className="w-6 h-6" />
-                                </div>
-                                <div>
-                                    <h3 className="font-semibold">Visit Us</h3>
-                                    <p className="text-muted-foreground">123 Culinary Ave, Foodie City</p>
+                                    <h3 className="font-semibold">Visit My Website</h3>
+                                    <p className="text-muted-foreground">
+                                        <a href="https://davamz.com" target="_blank" rel="noopener noreferrer">https://davamz.com</a>
+                                    </p>
                                 </div>
                             </div>
                         </div>
