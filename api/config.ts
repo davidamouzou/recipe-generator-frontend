@@ -1,7 +1,7 @@
 export const apiConfig = {
-    base_url: 'https://recipe-gen-ef308c787282.herokuapp.com',
+    base_url: process.env.BASE_URL,
     request_headers: {
         'Content-Type': 'application/json',
-        'api-key': 'jkhui'
+        'api-key': process.env.API_KEY
     }
 }
