@@ -22,7 +22,7 @@ export const SliderCard = () => {
   return (
     <div className="relative w-full h-full min-h-[400px] lg:min-h-[500px] bg-secondary/20 rounded-[2rem] overflow-hidden shadow-2xl">
       {/* Badge "Top-Rated Foods" */}
-      <div className="absolute top-6 left-6 z-20 flex items-center gap-3">
+      <div className="absolute top-4 left-4 md:top-6 md:left-6 z-20 flex items-center gap-3">
         <div className="bg-white/90 backdrop-blur-md p-2.5 rounded-full shadow-sm">
           <Star className="text-primary h-5 w-5 fill-current" />
         </div>
@@ -32,8 +32,8 @@ export const SliderCard = () => {
       </div>
 
       {/* Title Overlay */}
-      <div className="absolute bottom-6 left-6 right-6 z-20">
-        <div className="bg-white/80 backdrop-blur-md p-6 rounded-3xl shadow-lg border border-white/50">
+      <div className="absolute bottom-4 left-4 right-4 md:bottom-6 md:left-6 md:right-6 z-20">
+        <div className="bg-white/80 backdrop-blur-md p-4 md:p-6 rounded-3xl shadow-lg border border-white/50">
           <h3 className="text-xl md:text-2xl font-bold text-foreground leading-tight">
             Savor Healthy Eats - Keep it Casual and Easy-Going!
           </h3>

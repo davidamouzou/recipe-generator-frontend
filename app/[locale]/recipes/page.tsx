@@ -11,7 +11,7 @@ export default function RecipesPage() {
                     <Header />
                     <div className="py-8">
                         <div className="mb-12 text-center">
-                            <h1 className="text-4xl md:text-5xl font-bold mb-4">
+                            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4">
                                 Discover <span className="text-primary">Recipes</span>
                             </h1>
                             <p className="text-muted-foreground max-w-2xl mx-auto">

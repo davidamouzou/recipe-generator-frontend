@@ -4,7 +4,8 @@ import logo from "@/app/assets/icons/logo.png";
 import Image from "next/image";
 import { Button } from "../ui/button";
 import { useTheme } from "next-themes";
-import { Sun, Moon, Search, User } from "lucide-react";
+import { Sun, Moon, Search, User, Menu } from "lucide-react";
+import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "../ui/sheet";
 import LanguageSelector from "./language-selector";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
@@ -88,6 +89,34 @@ const Header = () => {
         <Button variant="ghost" size="icon" className="rounded-full">
           <User className="w-5 h-5" />
         </Button>
+
+        {/* Mobile Menu */}
+        <div className="md:hidden">
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <Menu className="h-6 w-6" />
+                <span className="sr-only">Open menu</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right">
+              <SheetHeader>
+                <SheetTitle>Menu</SheetTitle>
+              </SheetHeader>
+              <nav className="flex flex-col gap-6 mt-8">
+                {navLinks.map((link) => (
+                  <Link
+                    key={link.name}
+                    href={link.href}
+                    className="text-lg font-medium text-foreground hover:text-primary transition-colors"
+                  >
+                    {link.name}
+                  </Link>
+                ))}
+              </nav>
+            </SheetContent>
+          </Sheet>
+        </div>
       </div>
     </motion.header>
   );

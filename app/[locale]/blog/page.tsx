@@ -36,7 +36,7 @@ export default function BlogPage() {
                 <Header />
                 <div className="py-12 space-y-12">
                     <div className="text-center space-y-4">
-                        <h1 className="text-4xl md:text-6xl font-bold">
+                        <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold">
                             Culinary <span className="text-primary">Blog</span>
                         </h1>
                         <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
@@ -44,7 +44,7 @@ export default function BlogPage() {
                         </p>
                     </div>
 
-                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                         {posts.map((post) => (
                             <div key={post.id} className="group cursor-pointer space-y-4">
                                 <div className="relative aspect-video rounded-2xl overflow-hidden bg-secondary/20">
