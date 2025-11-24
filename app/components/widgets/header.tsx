@@ -41,7 +41,8 @@ const Header = () => {
       {/* Logo Section */}
       <Link href="/" className="flex items-center">
         <div className="relative overflow-hidden rounded-lg w-8 h-8">
-          <Image src={theme === 'dark' ? '/logo/light.png' : '/logo/dark.png'} alt="Flavoriz Logo" fill className="object-cover" />
+          <Image src="/logo/dark.png" alt="Flavoriz Logo" fill className="object-cover dark:hidden" />
+          <Image src="/logo/light.png" alt="Flavoriz Logo" fill className="object-cover hidden dark:block" />
         </div>
         <span className="text-2xl md:block hidden font-bold tracking-tight">
           C<span className="text-primary">OOK</span>ER
