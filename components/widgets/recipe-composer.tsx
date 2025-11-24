@@ -1,81 +1,58 @@
 "use client";
 
-import React, { useCallback, useState } from "react";
-import { Button } from "@/components/ui/button"; // Assuming these are Shadcn/UI components
+import React, { useCallback, useState, useRef, useEffect } from "react";
+import { Button } from "@/components/ui/button";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, SlidersHorizontal, WandSparkles } from "lucide-react";
-import chooseImage from "@/app/utils/choose_image"; // Assuming this is a utility function
-
-import {
-    Sheet,
-    SheetContent,
-    SheetDescription,
-    SheetHeader,
-    SheetTitle,
-    SheetTrigger,
-} from "@/components/ui/sheet";
-import { Recipe } from "@/api/entities/recipe"; // Assuming these are your API entities/providers
+import { SlidersHorizontal, WandSparkles, X, Send, Image as ImageIcon, Loader2 } from "lucide-react";
+import chooseImage from "@/app/utils/choose_image";
+import { Recipe } from "@/api/entities/recipe";
 import { RecipeProvider } from "@/api/provider/recipe_provider";
-import RecipeCard from "./recipe_card"; // Assuming RecipeCard component exists
-import { toast, Toaster } from "sonner"; // Import Toaster from sonner
-import { useEffect } from "react";
+import RecipeCard from "./recipe_card";
+import { toast, Toaster } from "sonner";
 import { uploadUrlImage } from "@/app/utils/upload_file";
+import { motion, AnimatePresence } from "framer-motion";
+import Image from "next/image";
 
-// RecipeListPanel component to display a list of recipes in a sheet
-export function RecipeListPanel({
-    open = false,
-    recipe = null,
-    onOpenChange,
-    prompt
-}: {
-    open?: boolean,
-    recipe?: Recipe | null,
-    onOpenChange: (isOpen: boolean) => void,
-    prompt?: string
-}) {
-    return (
-        <Sheet open={open} onOpenChange={onOpenChange}>
-            <SheetTrigger asChild>
-                {/* Trigger is handled externally in this setup */}
-            </SheetTrigger>
-            <SheetContent className="overflow-y-scroll">
-                <SheetHeader>
-                    <SheetTitle>Recettes</SheetTitle>
-                    {prompt && (
-                        <SheetDescription className="text-xs bg-gray-500/10 rounded-md p-2 italic">{prompt}</SheetDescription>
-                    )}
-                </SheetHeader>
-                <div className="grid gap-4 py-4">
-                    {recipe ? (
-                        <RecipeCard recipe={recipe} />
-                    ) : (
-                        <p className="text-sm text-muted-foreground text-center py-4">Aucune recette à afficher pour le moment.</p>
-                    )}
-                </div>
-            </SheetContent>
-        </Sheet>
-    );
+interface Message {
+    id: string;
+    role: 'user' | 'assistant';
+    content: string;
+    recipe?: Recipe | null;
+    image?: string;
+    isLoading?: boolean;
 }
 
-// Main RecipeCreator component
 const RecipeCreator: React.FC = () => {
-    // State variables for search, filters, UI, and data
-    const [search, setSearch] = useState("");
+    // Chat State
+    const [isOpen, setIsOpen] = useState(false);
+    const [messages, setMessages] = useState<Message[]>([
+        {
+            id: 'welcome',
+            role: 'assistant',
+            content: "Bonjour ! Je suis votre chef IA personnel. Dites-moi ce que vous avez dans votre frigo ou ce dont vous avez envie, et je créerai une recette pour vous !"
+        }
+    ]);
+    const [inputValue, setInputValue] = useState("");
+    const [isGenerating, setIsGenerating] = useState(false);
+    const messagesEndRef = useRef<HTMLDivElement>(null);
+
+    // Filter State
     const [mealType, setMealType] = useState("");
-    const [cookTime, setCookTime] = useState([15]); // Default cook time 30 mins
+    const [cookTime, setCookTime] = useState([30]);
     const [level, setLevel] = useState("");
     const [allergens, setAllergens] = useState("");
-    const [isSheetOpen, setIsSheetOpen] = useState(false); // Renamed for clarity
-    const [recipe, setRecipe] = useState<Recipe | null>(null);
-    const [isLoading, setIsLoading] = useState(false); // Renamed for clarity
-    const [onFocus, setOnFocus] = useState(false);
-    const [currentPrompt, setCurrentPrompt] = useState(""); // Renamed for clarity
-    const [language, setLanguage] = useState("fr"); // Default
+    const [language, setLanguage] = useState("fr");
 
+    // Auto-scroll to bottom
+    useEffect(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, [messages, isOpen]);
+
+    // Detect language
     useEffect(() => {
         if (typeof window !== "undefined" && window.navigator && window.navigator.language) {
             const lang = window.navigator.language.slice(0, 2);
@@ -85,17 +62,10 @@ const RecipeCreator: React.FC = () => {
         }
     }, []);
 
-    // Handler for choosing an image to generate recipes
-    const chooseImageHandler = async () => {
-        const image = await chooseImage();
-    };
-
-    // Handler for saving recipes
     const saveRecipesHandler = useCallback(async (recipeToSave: Recipe): Promise<Recipe | null> => {
         try {
             const { success, recipe } = await RecipeProvider.saveRecipe(recipeToSave);
             if (success) {
-                // Optionally: toast or notification
                 return recipe;
             }
             return null;
@@ -105,265 +75,342 @@ const RecipeCreator: React.FC = () => {
         }
     }, []);
 
-    // Handler for generating recipes based on text description and filters
-    const generateRecipesHandler = async () => {
-        if (search.length < 3 && !mealType && !level && !allergens) {
-            toast.warning("Veuillez affiner votre recherche", {
-                description: "Entrez des ingrédients, un type de repas, un niveau ou des allergènes.",
-            });
-            return;
-        }
+    const handleSendMessage = async () => {
+        if (!inputValue.trim() && !mealType && !level) return;
 
-        setIsLoading(true);
+        const userMessageText = inputValue;
+        setInputValue("");
+
+        // Construct the full prompt including filters
         const descriptionParts = [
-            search,
+            userMessageText,
             mealType ? `type de repas: ${mealType}` : '',
             `durée <= ${cookTime[0]} minutes`,
             level ? `niveau: ${level}` : '',
             allergens ? `éviter les allergènes: ${allergens}` : ''
-        ].filter(Boolean).join(", "); // Construct a comprehensive description
+        ].filter(Boolean).join(", ");
 
-        setCurrentPrompt(descriptionParts); // Set the prompt for the sheet
+        const newUserMessage: Message = {
+            id: Date.now().toString(),
+            role: 'user',
+            content: userMessageText || "Génère une recette avec mes filtres."
+        };
 
-        const toastId = toast.loading("Génération des recettes en cours...", {
-            description: `Basé sur: ${descriptionParts}`,
-        });
+        setMessages(prev => [...prev, newUserMessage]);
+        setIsGenerating(true);
 
-        // Clear search input after starting generation
-        setSearch("");
+        // Add a temporary loading message
+        const loadingId = 'loading-' + Date.now();
+        setMessages(prev => [...prev, {
+            id: loadingId,
+            role: 'assistant',
+            content: "Je réfléchis à une délicieuse recette...",
+            isLoading: true
+        }]);
 
-        const res = await RecipeProvider.generateRecipe(descriptionParts, language);
+        try {
+            const res = await RecipeProvider.generateRecipe(descriptionParts, language);
 
-        if (res.success) {
-            const recipeGenerate = res.recipe;
-            if (recipeGenerate?.description === "" && recipeGenerate?.ingredients === undefined && recipeGenerate?.instructions === undefined && recipeGenerate?.duration_to_cook === 0) {
-                toast.info("Votre description ne permet pas de générer une recette correcte.", {
-                    id: toastId,
-                    description: "Veuillez réessayer avec une autre description.",
-                });
-                setIsLoading(false);
-                return;
+            // Remove loading message
+            setMessages(prev => prev.filter(m => m.id !== loadingId));
+
+            if (res.success && res.recipe) {
+                const recipeGenerate = res.recipe;
+
+                // Basic validation
+                if (recipeGenerate.description === "" && !recipeGenerate.ingredients && !recipeGenerate.instructions) {
+                    setMessages(prev => [...prev, {
+                        id: Date.now().toString(),
+                        role: 'assistant',
+                        content: "Désolé, je n'ai pas pu générer une recette valide avec ces critères. Essayez d'être plus précis."
+                    }]);
+                    return;
+                }
+
+                // Generate and upload image
+                try {
+                    const imageGenerate = await RecipeProvider.generateImage(res.recipe.description ?? "");
+                    const imageUpload = await uploadUrlImage(imageGenerate ?? "");
+                    res.recipe.image = imageUpload || "";
+                    await saveRecipesHandler(res.recipe);
+                } catch (imgError) {
+                    console.error("Image generation failed", imgError);
+                    // Continue without image or with default
+                }
+
+                setMessages(prev => [...prev, {
+                    id: Date.now().toString(),
+                    role: 'assistant',
+                    content: `Voici une recette pour vous : ${res.recipe?.recipe_name}`,
+                    recipe: res.recipe,
+                }]);
+            } else {
+                setMessages(prev => [...prev, {
+                    id: Date.now().toString(),
+                    role: 'assistant',
+                    content: res.message || "Une erreur est survenue lors de la génération."
+                }]);
             }
-
-            const imageGenerate = await RecipeProvider.generateImage(res.recipe?.description ?? "");
-            const imageUpload = await uploadUrlImage(imageGenerate ?? "");
-            res.recipe!.image = imageUpload || "";
-            const savedRecipe = await saveRecipesHandler(res.recipe!);
-            setRecipe(savedRecipe);
-            setIsSheetOpen(true);
-
-            toast.success("Recettes générées avec succès!", {
-                id: toastId,
-                description: `Recette créée.`,
-            });
-
-        } else {
-            toast.warning(res.message || "Erreur de génération", {
-                id: toastId,
-                description: "Veuillez réessayer plus tard.",
-            });
+        } catch (error) {
+            setMessages(prev => prev.filter(m => m.id !== loadingId));
+            setMessages(prev => [...prev, {
+                id: Date.now().toString(),
+                role: 'assistant',
+                content: "Désolé, une erreur technique est survenue."
+            }]);
+        } finally {
+            setIsGenerating(false);
         }
-
-        setIsLoading(false);
     };
 
-    // Handler to close the recipe list sheet
-    const handleCloseSheet = (isOpen: boolean) => {
-        setIsSheetOpen(isOpen);
+    const handleImageUpload = async () => {
+        try {
+            const image = await chooseImage();
+            if (image) {
+                setMessages(prev => [...prev, {
+                    id: Date.now().toString(),
+                    role: 'user',
+                    content: "J'ai une image de mes ingrédients !",
+                    image: image
+                }]);
+
+                // TODO: Send image to backend when API is ready
+                // For now, we just acknowledge it
+                setTimeout(() => {
+                    setMessages(prev => [...prev, {
+                        id: Date.now().toString(),
+                        role: 'assistant',
+                        content: "Superbe image ! Pour l'instant, je ne peux pas encore analyser les images, mais je garde ça au chaud pour une prochaine mise à jour !"
+                    }]);
+                }, 1000);
+            }
+        } catch (e) {
+            console.error(e);
+            toast.error("Erreur lors du chargement de l'image");
+        }
     };
 
     return (
         <>
             <Toaster richColors position="top-right" />
-            <RecipeListPanel
-                open={isSheetOpen}
-                recipe={recipe}
-                onOpenChange={handleCloseSheet}
-                prompt={currentPrompt}
-            />
-            {/* Main input area for recipe generation */}
-            <div className={`fixed transition-all duration-300 z-40 flex justify-center items-center left-2 right-2 bottom-2`}>
-                <div className={`mt-12 border p-2 backdrop-blur-2xl  md:w-2/3 rounded-2xl bg-background/80 ${(onFocus || search.length > 0) ? 'w-full' : ''}`}>
-                    <div className="flex gap-2"> {/* items-start to align button and textarea top */}
-                        <Button onClick={e => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            chooseImageHandler();
-                        }} size="icon" variant="ghost" disabled={isLoading}>
-                            <Plus />
-                        </Button>
-                        <textarea
-                            rows={onFocus ? 4 : 2}
-                            className="bg-transparent mt-1.5 w-full outline-none resize-none"
-                            name="search"
-                            id="search"
-                            placeholder="Décrivez votre plat idéal, ex: 'Poulet curry coco, rapide et facile'..."
-                            value={search}
-                            onChange={e => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                setSearch(e.target.value)
-                            }}
-                            onFocus={() => setOnFocus(true)}
-                            onBlur={() => setOnFocus(false)}
-                        ></textarea>
-                    </div>
-                    <div className="flex items-center justify-between">
-                        <Popover>
-                            <PopoverTrigger asChild>
-                                <Button variant="secondary" size="sm" disabled={isLoading}>
-                                    <SlidersHorizontal className="mr-2 h-4 w-4" />
-                                    Filtres
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="mx-2 sm:mx-6 w-full sm:w-80">
-                                <div className="space-y-4 p-1">
-                                    <h4 className="font-medium leading-none mb-2">Options de filtrage</h4>
-                                    <div>
-                                        <Label htmlFor="languageSelect" className="block text-sm font-medium mb-1">Langue</Label>
-                                        <Select
-                                            value={language}
-                                            onValueChange={setLanguage}
-                                            disabled={isLoading}
-                                        >
-                                            <SelectTrigger id="languageSelect">
-                                                <SelectValue placeholder="Langue" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="fr">Français</SelectItem>
-                                                <SelectItem value="en">English</SelectItem>
-                                                <SelectItem value="es">Español</SelectItem>
-                                                <SelectItem value="de">Deutsch</SelectItem>
-                                                {/* Add more languages as needed */}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div>
-                                        <Label htmlFor="mealTypeSelect" className="block text-sm font-medium mb-1">Type de repas</Label>
-                                        <Select value={mealType} onValueChange={setMealType} disabled={isLoading}>
-                                            <SelectTrigger id="mealTypeSelect">
-                                                <SelectValue placeholder="Type de repas" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="anoter">Aucun</SelectItem>
-                                                <SelectItem value="breakfast">Petit déjeuner</SelectItem>
-                                                <SelectItem value="lunch">Déjeuner</SelectItem>
-                                                <SelectItem value="dinner">Dîner</SelectItem>
-                                                <SelectItem value="dessert">Dessert</SelectItem>
-                                                <SelectItem value="snack">En-cas</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div>
-                                        <Label htmlFor="cookTimeSlider" className="block text-sm font-medium mb-1">
-                                            Temps de cuisson (max)
-                                        </Label>
-                                        <Slider
-                                            id="cookTimeSlider"
-                                            value={cookTime}
-                                            onValueChange={setCookTime}
-                                            max={180} // Increased max time
-                                            step={5}
-                                            disabled={isLoading}
-                                        />
-                                        <div className="text-xs text-muted-foreground mt-1 text-right">
-                                            {cookTime[0]} min
-                                        </div>
-                                    </div>
-                                    <Select value={level} onValueChange={setLevel} disabled={isLoading}>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Niveau de difficulté" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="easy">Débutant</SelectItem>
-                                            <SelectItem value="medium">Intermédiaire</SelectItem>
-                                            <SelectItem value="hard">Chef étoilé</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                    <div>
-                                        <Label htmlFor="allergensInput" className="block text-sm font-medium mb-1">Allergènes à éviter</Label>
-                                        <Input
-                                            id="allergensInput"
-                                            placeholder="Ex: gluten, arachides..."
-                                            value={allergens}
-                                            onChange={e => setAllergens(e.target.value)}
-                                            disabled={isLoading}
-                                        />
-                                        <p className="text-xs text-muted-foreground mt-1">Séparez par des virgules.</p>
-                                    </div>
+
+            {/* Floating Toggle Button */}
+            <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-4 pointer-events-none">
+                <AnimatePresence>
+                    {!isOpen && (
+                        <>
+                            {/* Tooltip/Call to action bubble */}
+                            <motion.div
+                                initial={{ opacity: 0, x: 20, scale: 0.8 }}
+                                animate={{ opacity: 1, x: 0, scale: 1 }}
+                                exit={{ opacity: 0, x: 20, scale: 0.8 }}
+                                transition={{ delay: 1, type: "spring" }}
+                                className="bg-white dark:bg-zinc-800 px-4 py-2 rounded-2xl shadow-xl border border-primary/10 pointer-events-auto relative mr-2"
+                            >
+                                <div className="text-sm font-medium text-foreground">
+                                    Besoin d'inspiration ? 👨‍🍳
                                 </div>
-                            </PopoverContent>
-                        </Popover>
-                        <Button
-                            size="icon"
-                            onClick={generateRecipesHandler}
-                            disabled={isLoading || (search.length < 3 && !mealType && !level && !allergens)} // Disable if loading or no input
-                            className="bg-gradient-to-r from-gray-800 via-gray-600 to-gray-700 hover:from-gray-900 hover:via-gray-700 hover:to-black text-white rounded-full p-2 shadow-lg"
-                        >
-                            {isLoading ? (
-                                <div className="flex items-center justify-center h-5 w-5"> {/* Adjusted size */}
-                                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-background border-t-transparent"></div> {/* Adjusted border */}
+                                <div className="absolute -bottom-1 right-6 w-3 h-3 bg-white dark:bg-zinc-800 border-b border-r border-primary/10 transform rotate-45 translate-y-1/2"></div>
+                            </motion.div>
+
+                            <motion.div
+                                className="relative pointer-events-auto group"
+                                initial={{ scale: 0, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                exit={{ scale: 0, opacity: 0 }}
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
+                            >
+                                {/* Pulse rings */}
+                                <motion.div
+                                    className="absolute -inset-4 bg-primary/30 rounded-full z-0"
+                                    animate={{
+                                        scale: [1, 1.5],
+                                        opacity: [0.5, 0],
+                                    }}
+                                    transition={{
+                                        duration: 2,
+                                        repeat: Infinity,
+                                        ease: "easeOut"
+                                    }}
+                                />
+                                <motion.div
+                                    onClick={() => setIsOpen(true)}
+                                    className="absolute -inset-4 bg-primary/20 rounded-full z-0"
+                                    animate={{
+                                        scale: [1, 1.5],
+                                        opacity: [0.5, 0],
+                                    }}
+                                    transition={{
+                                        duration: 2,
+                                        repeat: Infinity,
+                                        ease: "easeOut",
+                                        delay: 1
+                                    }}
+                                />
+
+                                <div
+                                    className="rounded-full shadow-lg border-4 bg-white dark:bg-zinc-900 overflow-hidden w-[70px] h-[70px]"
+
+                                >
+                                    <Image
+                                        src="/images/Beagle_Fast_Food.gif"
+                                        alt="Chef Assistant"
+                                        width={80}
+                                        height={80}
+                                    />
                                 </div>
-                            ) : (
-                                <WandSparkles className="h-5 w-5" />
-                            )}
-                            <span className="sr-only">Générer les recettes</span>
-                        </Button>
-                    </div>
-                </div>
+                            </motion.div>
+                        </>
+                    )}
+                </AnimatePresence>
             </div>
+
+            {/* Chat Window */}
+            <AnimatePresence>
+                {isOpen && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 50, scale: 0.9 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 50, scale: 0.9 }}
+                        transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                        className="fixed bottom-6 right-6 z-50 w-[90vw] sm:w-[450px] h-[600px] max-h-[80vh] flex flex-col bg-background/95 backdrop-blur-xl border border-border/50 rounded-3xl shadow-2xl overflow-hidden"
+                    >
+                        {/* Header */}
+                        <div className="flex items-center justify-between p-4 border-b border-border/50 bg-muted/30">
+                            <div className="flex items-center gap-2">
+                                <div className="p-2 bg-primary/10 rounded-full">
+                                    <WandSparkles className="h-5 w-5 text-primary" />
+                                </div>
+                                <div>
+                                    <h3 className="font-semibold text-sm">Chef Assistant</h3>
+                                    <p className="text-xs text-muted-foreground">Toujours prêt à cuisiner</p>
+                                </div>
+                            </div>
+                            <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)} className="h-8 w-8 rounded-full hover:bg-destructive/10 hover:text-destructive">
+                                <X className="h-4 w-4" />
+                            </Button>
+                        </div>
+
+                        {/* Messages Area */}
+                        <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
+                            {messages.map((msg) => (
+                                <div
+                                    key={msg.id}
+                                    className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                                >
+                                    <div className={`max-w-[85%] space-y-2 ${msg.role === 'user' ? 'items-end flex flex-col' : 'items-start flex flex-col'}`}>
+                                        {msg.image && (
+                                            <div className="rounded-xl overflow-hidden border border-border/50 shadow-sm mb-1 max-w-[200px]">
+                                                <Image
+                                                    src={msg.image}
+                                                    alt="User uploaded"
+                                                    width={200}
+                                                    height={200}
+                                                    className="w-full h-auto object-cover"
+                                                />
+                                            </div>
+                                        )}
+
+                                        <div
+                                            className={`p-3 rounded-2xl text-sm ${msg.role === 'user'
+                                                ? 'bg-primary text-primary-foreground rounded-tr-sm'
+                                                : 'bg-muted/50 border border-border/50 rounded-tl-sm'
+                                                }`}
+                                        >
+                                            {msg.isLoading ? (
+                                                <div className="flex items-center gap-2">
+                                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                                    <span>{msg.content}</span>
+                                                </div>
+                                            ) : (
+                                                msg.content
+                                            )}
+                                        </div>
+                                        {msg.recipe && (
+                                            <div className="w-full sm:w-72 mt-2">
+                                                <RecipeCard recipe={msg.recipe} />
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                            <div ref={messagesEndRef} />
+                        </div>
+
+                        {/* Input Area */}
+                        <div className="p-4 bg-background/50 border-t border-border/50">
+                            <div className="flex items-end gap-2">
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <Button variant="outline" size="icon" className="h-10 w-10 shrink-0 rounded-full" title="Filtres">
+                                            <SlidersHorizontal className="h-4 w-4" />
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-80 p-4" align="start" side="top">
+                                        <div className="space-y-4">
+                                            <h4 className="font-medium leading-none mb-2">Préférences</h4>
+                                            <div className="space-y-2">
+                                                <Label>Type de repas</Label>
+                                                <Select value={mealType} onValueChange={setMealType}>
+                                                    <SelectTrigger><SelectValue placeholder="Tous" /></SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="breakfast">Petit déjeuner</SelectItem>
+                                                        <SelectItem value="lunch">Déjeuner</SelectItem>
+                                                        <SelectItem value="dinner">Dîner</SelectItem>
+                                                        <SelectItem value="dessert">Dessert</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label>Temps max: {cookTime[0]} min</Label>
+                                                <Slider value={cookTime} onValueChange={setCookTime} max={180} step={5} />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label>Difficulté</Label>
+                                                <Select value={level} onValueChange={setLevel}>
+                                                    <SelectTrigger><SelectValue placeholder="Toutes" /></SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="easy">Facile</SelectItem>
+                                                        <SelectItem value="medium">Moyen</SelectItem>
+                                                        <SelectItem value="hard">Difficile</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                        </div>
+                                    </PopoverContent>
+                                </Popover>
+
+                                <Button variant="ghost" size="icon" className="h-10 w-10 shrink-0 rounded-full" onClick={handleImageUpload}>
+                                    <ImageIcon className="h-5 w-5 text-muted-foreground" />
+                                </Button>
+
+                                <div className="relative flex-1">
+                                    <Input
+                                        value={inputValue}
+                                        onChange={(e) => setInputValue(e.target.value)}
+                                        onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
+                                        placeholder="Une idée de recette ?"
+                                        className="pr-10 py-6 rounded-full bg-muted/30 border-transparent focus:border-primary/20 focus:bg-background transition-all"
+                                        disabled={isGenerating}
+                                    />
+                                </div>
+
+                                <Button
+                                    onClick={handleSendMessage}
+                                    disabled={(!inputValue.trim() && !mealType) || isGenerating}
+                                    size="icon"
+                                    className="h-10 w-10 shrink-0 rounded-full bg-primary hover:bg-primary/90 transition-all"
+                                >
+                                    {isGenerating ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
+                                </Button>
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </>
     );
 };
 
 export default RecipeCreator;
-
-// Mock implementations for missing imports (for standalone testing if needed)
-// Remove these if you have the actual implementations in your project
-
-//_BEGIN_MOCK_ONLY_
-if (typeof chooseImage === 'undefined') {
-    // @ts-ignore
-    global.chooseImage = async () => {
-        console.log("chooseImage mock called");
-        // Simulate image selection, return a mock File or data URL string
-        // For simplicity, returning a string. In reality, this would be a File object.
-        // return new File(["mock image content"], "mock.jpg", { type: "image/jpeg" });
-        return "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
-
-    };
-}
-
-if (typeof RecipeProvider === 'undefined') {
-    // @ts-ignore
-    global.RecipeProvider = {
-        generateWithImage: async (image: any): Promise<Recipe[]> => {
-            console.log("RecipeProvider.generateWithImage mock called with:", image ? 'image data' : 'no image');
-            await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate network delay
-            // @ts-ignore
-            return [{ id: 'img_recipe_1', name: 'Salade d\'image', description: 'Une délicieuse salade générée à partir d\'une image.', ingredients: ['Laitue', 'Tomate', 'Concombre'], instructions: ['Laver', 'Couper', 'Mélanger'], cookTime: 10, level: 'easy' }];
-        },
-        generateWithDescription: async (description: string): Promise<Recipe[]> => {
-            console.log("RecipeProvider.generateWithDescription mock called with:", description);
-            await new Promise(resolve => setTimeout(resolve, 1500));
-            // @ts-ignore
-            return [{ id: 'desc_recipe_1', name: `Recette pour "${description.substring(0, 20)}..."`, description: `Recette basée sur: ${description}`, ingredients: ['Ingrédient A', 'Ingrédient B'], instructions: ['Étape 1', 'Étape 2'], cookTime: 30, level: 'medium' }];
-        },
-        saveRecipe: async (recipe: Recipe): Promise<boolean> => {
-            console.log("RecipeProvider.saveRecipe mock called for:", recipe.recipe_name);
-            await new Promise(resolve => setTimeout(resolve, 500));
-            return Math.random() > 0.1; // Simulate occasional save failure
-        }
-    };
-}
-
-if (typeof RecipeCard === 'undefined') {
-    // @ts-ignore
-    global.RecipeCard = ({ recipe }: { recipe: Recipe }) => (
-        <div style={{ border: '1px solid #ccc', padding: '10px', margin: '5px', borderRadius: '5px' }}>
-            <h4>{recipe.recipe_name}</h4>
-            <p>{recipe.description}</p>
-            <small>Temps: {recipe.duration_to_cook} min, Niveau: {recipe.difficulty}</small>
-        </div>
-    );
-}
