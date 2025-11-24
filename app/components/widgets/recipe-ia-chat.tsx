@@ -26,7 +26,7 @@ interface Message {
     isLoading?: boolean;
 }
 
-const RecipeCreator: React.FC = () => {
+const RecipeIAChat: React.FC = () => {
     // Chat State
     const [isOpen, setIsOpen] = useState(false);
     const [messages, setMessages] = useState<Message[]>([
@@ -44,7 +44,6 @@ const RecipeCreator: React.FC = () => {
     const [mealType, setMealType] = useState("");
     const [cookTime, setCookTime] = useState([30]);
     const [level, setLevel] = useState("");
-    const [allergens, setAllergens] = useState("");
     const [language, setLanguage] = useState("fr");
 
     // Auto-scroll to bottom
@@ -87,7 +86,6 @@ const RecipeCreator: React.FC = () => {
             mealType ? `type de repas: ${mealType}` : '',
             `durée <= ${cookTime[0]} minutes`,
             level ? `niveau: ${level}` : '',
-            allergens ? `éviter les allergènes: ${allergens}` : ''
         ].filter(Boolean).join(", ");
 
         const newUserMessage: Message = {
@@ -111,9 +109,6 @@ const RecipeCreator: React.FC = () => {
         try {
             const res = await RecipeProvider.generateRecipe(descriptionParts, language);
 
-            // Remove loading message
-            setMessages(prev => prev.filter(m => m.id !== loadingId));
-
             if (res.success && res.recipe) {
                 const recipeGenerate = res.recipe;
 
@@ -132,18 +127,23 @@ const RecipeCreator: React.FC = () => {
                     const imageGenerate = await RecipeProvider.generateImage(res.recipe.description ?? "");
                     const imageUpload = await uploadUrlImage(imageGenerate ?? "");
                     res.recipe.image = imageUpload || "";
-                    await saveRecipesHandler(res.recipe);
+                    const recipeSave = await saveRecipesHandler(res.recipe);
+                    if (recipeSave) {
+                        setMessages(prev => [...prev, {
+                            id: Date.now().toString(),
+                            role: 'assistant',
+                            content: `Voici une recette pour vous : ${res.recipe?.recipe_name}`,
+                            recipe: recipeSave,
+                        }]);
+                    }
                 } catch (imgError) {
                     console.error("Image generation failed", imgError);
                     // Continue without image or with default
                 }
 
-                setMessages(prev => [...prev, {
-                    id: Date.now().toString(),
-                    role: 'assistant',
-                    content: `Voici une recette pour vous : ${res.recipe?.recipe_name}`,
-                    recipe: res.recipe,
-                }]);
+                // Remove loading message
+                setMessages(prev => prev.filter(m => m.id !== loadingId));
+                
             } else {
                 setMessages(prev => [...prev, {
                     id: Date.now().toString(),
@@ -193,7 +193,6 @@ const RecipeCreator: React.FC = () => {
     return (
         <>
             <Toaster richColors position="top-right" />
-
             {/* Floating Toggle Button */}
             <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-4 pointer-events-none">
                 <AnimatePresence>
@@ -413,4 +412,4 @@ const RecipeCreator: React.FC = () => {
     );
 };
 
-export default RecipeCreator;
+export default RecipeIAChat;

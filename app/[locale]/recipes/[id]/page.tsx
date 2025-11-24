@@ -9,7 +9,7 @@ import Image from "next/image";
 import { PiBowlFoodLight, PiFireSimpleThin } from "react-icons/pi";
 import { Button } from "@/app/components/ui/button";
 import { DetailRecipeSkeleton } from "@/app/components/widgets/detail-recipe-skeleton";
-import RecipeCreator from "@/app/components/widgets/recipe-composer";
+import RecipeIAChat from "@/app/components/widgets/recipe-ia-chat";
 import { motion } from "framer-motion";
 import Header from "@/app/components/widgets/header";
 
@@ -256,7 +256,7 @@ const DetailRecipe = () => {
       </div>
 
       {/* AI Chef Assistant */}
-      <RecipeCreator />
+      <RecipeIAChat />
     </div>
   );
 };

@@ -2,7 +2,7 @@ import { SliderCard } from "@/app/components/widgets/slider_card";
 import { RecipeProvider } from "@/app/context/RecipeContext";
 import { Hero } from "@/app/components/widgets/hero";
 import { RecipeList } from "@/app/components/widgets/recipe-list";
-import RecipeCreator from "@/app/components/widgets/recipe-composer";
+import RecipeIAChat from "@/app/components/widgets/recipe-ia-chat";
 import Header from "@/app/components/widgets/header";
 
 export default function Home() {
@@ -23,7 +23,7 @@ export default function Home() {
           <RecipeList />
           <div className="h-36" />
 
-          <RecipeCreator />
+          <RecipeIAChat />
         </div>
       </main>
     </RecipeProvider>
