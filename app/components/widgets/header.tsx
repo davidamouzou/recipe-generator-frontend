@@ -9,6 +9,7 @@ import LanguageSelector from "./language-selector";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import React from "react";
 
 const Header = () => {
   const { setTheme, theme } = useTheme();
@@ -24,7 +25,7 @@ const Header = () => {
 
   const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
-      // Redirect to recipes page with search query
+      // Redirect to the recipe page with search query
       // For now, we'll just log it or redirect to /recipes
       // In a real app, you'd use router.push(`/recipes?search=${e.currentTarget.value}`)
       window.location.href = `/recipes`;
