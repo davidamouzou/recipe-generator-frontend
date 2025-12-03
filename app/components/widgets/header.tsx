@@ -12,7 +12,7 @@ import { motion } from "framer-motion";
 import React from "react";
 
 const Header = () => {
-  const { setTheme, theme } = useTheme();
+  const { setTheme } = useTheme();
   const t = useTranslations('Header');
 
   const navLinks = [
