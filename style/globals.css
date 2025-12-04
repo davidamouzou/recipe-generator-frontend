@@ -5,12 +5,12 @@
  /* Style de la balise select */
  select {
     background-color: transparent; /* Fond blanc */
-    appearance: none; /* Enlever les styles par défaut du navigateur */
-    -webkit-appearance: none; /* Compatibilité Webkit */
-    -moz-appearance: none; /* Compatibilité Firefox */
+    appearance: none; /* integer les styles par defaults du navigate */
+    -webkit-appearance: none; /* Compatibility Webkit */
+    -moz-appearance: none; /* Compatibility Firefox */
   }
 
-  /* Style des options dans le menu déroulant */
+  /* Style des options dans le menu undulant */
 
   
 

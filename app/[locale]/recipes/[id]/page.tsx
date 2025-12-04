@@ -61,7 +61,6 @@ const DetailRecipe = () => {
   const params = useParams()
   const [recipe, setRecipe] = useState<Recipe>()
   const [showFullDescription, setShowFullDescription] = useState(false)
-  const router = useRouter()
 
   useEffect(() => {
     const fetchRecipe = async () => {

@@ -55,7 +55,7 @@ export function Hero() {
                 <div className="flex flex-wrap gap-3">
                     {categories.map((cat, index) => (
                         <motion.button
-                            key={cat.name}
+                            key={index}
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
                             onClick={() => window.location.href = '/recipes'}

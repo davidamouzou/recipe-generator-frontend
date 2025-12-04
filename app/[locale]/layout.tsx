@@ -46,7 +46,7 @@ export default async function RootLayout({
 
   return (
     <html lang={locale} suppressHydrationWarning>
-      <head />
+      <head ><title>Generate</title></head>
       <body
         className={`${outfit.className}`}
       >
